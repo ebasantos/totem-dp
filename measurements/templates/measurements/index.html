@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Medição DNP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .menu-item {
+            transition: all 0.3s ease;
+        }
+        .menu-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Menu Lateral -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+        <div class="flex flex-col h-full">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-gray-800">Sistema DNP</h1>
+            </div>
+            <nav class="flex-1 px-4">
+                <a href="/" class="flex items-center px-4 py-3 text-gray-700 bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-home w-6"></i>
+                    <span class="ml-3">Início</span>
+                </a>
+                <a href="/measure" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-ruler w-6"></i>
+                    <span class="ml-3">Medir DNP</span>
+                </a>
+                <a href="/frames" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-glasses w-6"></i>
+                    <span class="ml-3">Visualizar Armações</span>
+                </a>
+                <a href="/history" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-history w-6"></i>
+                    <span class="ml-3">Histórico</span>
+                </a>
+                <a href="/settings" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg">
+                    <i class="fas fa-cog w-6"></i>
+                    <span class="ml-3">Configurações</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="ml-64 p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Bem-vindo ao Sistema de Medição DNP</h1>
+                <p class="text-xl text-gray-600">Sistema preciso para medição de distância interpupilar</p>
+            </div>
+
+            <!-- Cards de Funcionalidades -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-blue-600 mb-4">
+                        <i class="fas fa-camera text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Captura Precisão</h3>
+                    <p class="text-gray-600">Captura automática com guia visual para posicionamento correto do rosto</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-blue-600 mb-4">
+                        <i class="fas fa-ruler-combined text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Medição Automática</h3>
+                    <p class="text-gray-600">Algoritmo avançado para cálculo preciso da distância interpupilar</p>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-blue-600 mb-4">
+                        <i class="fas fa-database text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Histórico Completo</h3>
+                    <p class="text-gray-600">Armazenamento e consulta de todas as medições realizadas</p>
+                </div>
+            </div>
+
+            <!-- Como Usar -->
+            <div class="bg-white rounded-lg shadow-lg p-8 mb-12">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Como Usar</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 rounded-full p-3 mr-4">
+                            <i class="fas fa-user text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">1. Posicionamento</h3>
+                            <p class="text-gray-600">Posicione seu rosto dentro do guia visual, mantendo os olhos alinhados com as marcações</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 rounded-full p-3 mr-4">
+                            <i class="fas fa-camera text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">2. Captura</h3>
+                            <p class="text-gray-600">Aguarde o sistema indicar que o posicionamento está correto e clique em "Capturar"</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 rounded-full p-3 mr-4">
+                            <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">3. Resultado</h3>
+                            <p class="text-gray-600">Visualize a medição e faça ajustes manuais se necessário</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="bg-blue-100 rounded-full p-3 mr-4">
+                            <i class="fas fa-save text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">4. Salvamento</h3>
+                            <p class="text-gray-600">Salve a medição para consulta futura no histórico</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão de Início -->
+            <div class="text-center">
+                <a href="/measure" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg transition duration-200">
+                    Iniciar Medição
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

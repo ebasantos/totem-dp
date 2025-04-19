@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Medições - Sistema DNP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Menu Lateral -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+        <div class="flex flex-col h-full">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-gray-800">Sistema DNP</h1>
+            </div>
+            <nav class="flex-1 px-4">
+                <a href="/" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-home w-6"></i>
+                    <span class="ml-3">Início</span>
+                </a>
+                <a href="/measure" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-ruler w-6"></i>
+                    <span class="ml-3">Medir DNP</span>
+                </a>
+                <a href="/frames" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-glasses w-6"></i>
+                    <span class="ml-3">Visualizar Armações</span>
+                </a>
+                <a href="/history" class="flex items-center px-4 py-3 text-gray-700 bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-history w-6"></i>
+                    <span class="ml-3">Histórico</span>
+                </a>
+                <a href="/settings" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg">
+                    <i class="fas fa-cog w-6"></i>
+                    <span class="ml-3">Configurações</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="ml-64 p-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Histórico de Medições</h1>
+                <div class="flex space-x-4">
+                    <div class="relative">
+                        <input type="date" id="dateFilter" class="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-calendar absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                    <select id="statusFilter" class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todos os status</option>
+                        <option value="validated">Validados</option>
+                        <option value="pending">Pendentes</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Lista de Medições -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distância (mm)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="measurementsTable" class="bg-white divide-y divide-gray-200">
+                        <!-- Os dados serão carregados via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <div class="flex justify-between items-center mt-6">
+                <div id="paginationInfo" class="text-sm text-gray-700">
+                    <!-- Será atualizado via JavaScript -->
+                </div>
+                <div class="flex space-x-2" id="paginationControls">
+                    <!-- Será atualizado via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let totalItems = 0;
+        let measurements = [];
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function loadMeasurements() {
+            $.ajax({
+                url: '/api/measurements/',
+                method: 'GET',
+                success: function(data) {
+                    measurements = data;
+                    totalItems = measurements.length;
+                    updateTable();
+                    updatePagination();
+                },
+                error: function(error) {
+                    console.error('Erro ao carregar medições:', error);
+                }
+            });
+        }
+
+        function updateTable() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const currentItems = measurements.slice(start, end);
+            
+            const tableBody = $('#measurementsTable');
+            tableBody.empty();
+
+            currentItems.forEach(measurement => {
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${formatDate(measurement.created_at)}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${measurement.distance.toFixed(1)} mm</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${measurement.is_validated ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${measurement.is_validated ? 'Validado' : 'Pendente'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="viewMeasurement(${measurement.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="fas fa-eye"></i> Visualizar
+                            </button>
+                            <button onclick="deleteMeasurement(${measurement.id})" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash"></i> Excluir
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.append(row);
+            });
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const paginationInfo = $('#paginationInfo');
+            const paginationControls = $('#paginationControls');
+            
+            const start = (currentPage - 1) * itemsPerPage + 1;
+            const end = Math.min(start + itemsPerPage - 1, totalItems);
+            
+            paginationInfo.html(`
+                Mostrando <span class="font-medium">${start}</span> a <span class="font-medium">${end}</span> de <span class="font-medium">${totalItems}</span> resultados
+            `);
+
+            let controls = '';
+            if (currentPage > 1) {
+                controls += `
+                    <button onclick="changePage(${currentPage - 1})" class="px-3 py-1 border rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                `;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                controls += `
+                    <button onclick="changePage(${i})" class="px-3 py-1 border rounded-lg ${i === currentPage ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            if (currentPage < totalPages) {
+                controls += `
+                    <button onclick="changePage(${currentPage + 1})" class="px-3 py-1 border rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                `;
+            }
+
+            paginationControls.html(controls);
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            updateTable();
+            updatePagination();
+        }
+
+        function viewMeasurement(id) {
+            window.location.href = `/measurements/${id}/`;
+        }
+
+        function deleteMeasurement(id) {
+            if (confirm('Tem certeza que deseja excluir esta medição?')) {
+                $.ajax({
+                    url: `/api/measurements/${id}/`,
+                    method: 'DELETE',
+                    success: function() {
+                        loadMeasurements();
+                    },
+                    error: function(error) {
+                        console.error('Erro ao excluir medição:', error);
+                        alert('Erro ao excluir medição');
+                    }
+                });
+            }
+        }
+
+        // Filtros
+        $('#dateFilter, #statusFilter').change(function() {
+            const date = $('#dateFilter').val();
+            const status = $('#statusFilter').val();
+
+            $.ajax({
+                url: '/api/measurements/',
+                method: 'GET',
+                data: {
+                    date: date,
+                    status: status
+                },
+                success: function(data) {
+                    measurements = data;
+                    totalItems = measurements.length;
+                    currentPage = 1;
+                    updateTable();
+                    updatePagination();
+                },
+                error: function(error) {
+                    console.error('Erro ao filtrar medições:', error);
+                }
+            });
+        });
+
+        // Carrega as medições ao carregar a página
+        $(document).ready(function() {
+            loadMeasurements();
+        });
+    </script>
+</body>
+</html> 

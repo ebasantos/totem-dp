@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Sistema DNP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Menu Lateral -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+        <div class="flex flex-col h-full">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-gray-800">Sistema DNP</h1>
+            </div>
+            <nav class="flex-1 px-4">
+                <a href="/" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-home w-6"></i>
+                    <span class="ml-3">Início</span>
+                </a>
+                <a href="/measure" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-ruler w-6"></i>
+                    <span class="ml-3">Medir DNP</span>
+                </a>
+                <a href="/history" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                    <i class="fas fa-history w-6"></i>
+                    <span class="ml-3">Histórico</span>
+                </a>
+                <a href="/settings" class="flex items-center px-4 py-3 text-gray-700 bg-blue-50 rounded-lg">
+                    <i class="fas fa-cog w-6"></i>
+                    <span class="ml-3">Configurações</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="ml-64 p-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold text-gray-800 mb-8">Configurações do Sistema</h1>
+
+            <!-- Configurações da Câmera -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Configurações da Câmera</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Câmera</label>
+                        <select class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Webcam Padrão</option>
+                            <option>Webcam Externa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Resolução</label>
+                        <select class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>1280x720</option>
+                            <option>1920x1080</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Taxa de Frames</label>
+                        <select class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>30 FPS</option>
+                            <option>60 FPS</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Medição -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Configurações de Medição</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tolerância de Posicionamento (px)</label>
+                        <input type="number" value="30" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Distância Ideal (px)</label>
+                        <input type="number" value="150" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fator de Conversão (px/mm)</label>
+                        <input type="number" value="0.264583333" step="0.000000001" class="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configurações de Notificação -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Configurações de Notificação</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="notify-success" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="notify-success" class="ml-2 block text-sm text-gray-700">
+                            Notificar quando a medição for bem-sucedida
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="notify-error" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="notify-error" class="ml-2 block text-sm text-gray-700">
+                            Notificar quando ocorrer um erro
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="flex justify-end space-x-4">
+                <button class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

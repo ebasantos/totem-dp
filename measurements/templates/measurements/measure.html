@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+
+{% block title %}Medir DNP - Sistema de Medição{% endblock %}
+
+{% block extra_head %}
+<style>
+    .face-guide {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        height: 400px;
+        border: 2px solid white;
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 10;
+    }
+    .face-guide.correct {
+        border-color: #4CAF50;
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    }
+    .face-guide.incorrect {
+        border-color: #f44336;
+        box-shadow: 0 0 20px rgba(244, 67, 54, 0.5);
+    }
+    .face-guide::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 250px;
+        height: 350px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    }
+    .face-guide::after {
+        content: 'Posicione seu rosto aqui';
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        font-size: 14px;
+        white-space: nowrap;
+    }
+    .video-container {
+        position: relative;
+        width: 640px;
+        height: 480px;
+        margin: 0 auto;
+        background-color: #1a1a1a;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+    }
+    .distance-indicator {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        z-index: 10;
+    }
+    .position-feedback {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 10;
+    }
+    .distance-feedback {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+    #captureButton {
+        transition: opacity 0.3s ease;
+    }
+    #captureButton:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    #result {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #result.hidden {
+        display: none;
+    }
+    .result-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        margin: 10px 0;
+    }
+    .result-label {
+        font-size: 16px;
+        color: #666;
+    }
+    .distance-indicator {
+        font-size: 14px;
+        color: #ccc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Menu Lateral -->
+<div class="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+    <div class="flex flex-col h-full">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-gray-800">Sistema DNP</h1>
+        </div>
+        <nav class="flex-1 px-4">
+            <a href="/" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                <i class="fas fa-home w-6"></i>
+                <span class="ml-3">Início</span>
+            </a>
+            <a href="/measure" class="flex items-center px-4 py-3 text-gray-700 bg-blue-50 rounded-lg mb-2">
+                <i class="fas fa-ruler w-6"></i>
+                <span class="ml-3">Medir DNP</span>
+            </a>
+            <a href="/frames" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                <i class="fas fa-glasses w-6"></i>
+                <span class="ml-3">Visualizar Armações</span>
+            </a>
+            <a href="/history" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg mb-2">
+                <i class="fas fa-history w-6"></i>
+                <span class="ml-3">Histórico</span>
+            </a>
+            <a href="/settings" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 rounded-lg">
+                <i class="fas fa-cog w-6"></i>
+                <span class="ml-3">Configurações</span>
+            </a>
+        </nav>
+    </div>
+</div>
+
+<!-- Conteúdo Principal -->
+<div class="ml-64 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Medição de Distância Interpupilar</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <div class="video-container">
+                <video id="video" autoplay playsinline></video>
+                <div class="face-guide"></div>
+                <div class="position-feedback"></div>
+                <div class="distance-feedback"></div>
+                <div class="distance-indicator">
+                    Distância: <span id="liveDistanceValue">--</span>mm
+                </div>
+                <canvas id="canvas" class="hidden"></canvas>
+            </div>
+            
+            <div class="flex justify-center mt-6 space-x-4">
+                <button id="captureButton" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex items-center"
+                        disabled>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Capturar Medição
+                </button>
+            </div>
+        </div>
+
+        <div id="result" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Resultado da Medição</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Distância Interpupilar</p>
+                    <p class="text-2xl font-bold text-gray-800" id="resultDistanceValue">--</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Confiança</p>
+                    <p class="text-2xl font-bold text-gray-800" id="resultConfidenceValue">--</p>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Ajuste Manual (mm)</label>
+                <input type="number" id="manualDistance" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-4">
+                <button id="saveBtn" 
+                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                    Salvar Medição
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let captureButton = document.getElementById('captureButton');
+    let resultDiv = document.getElementById('result');
+    let resultDistanceValue = document.getElementById('resultDistanceValue');
+    let resultConfidenceValue = document.getElementById('resultConfidenceValue');
+    let manualDistance = document.getElementById('manualDistance');
+    let faceGuide = document.querySelector('.face-guide');
+    let positionFeedback = document.querySelector('.position-feedback');
+    let distanceFeedback = document.querySelector('.distance-feedback');
+    let liveDistanceValue = document.getElementById('liveDistanceValue');
+    let isCheckingPosition = false;
+    let currentMeasurementId = null;
+    let isFacePositioned = false;
+
+    async function startFaceDetection() {
+        if (isCheckingPosition) return;
+        isCheckingPosition = true;
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: 'user'
+                } 
+            });
+            video.srcObject = stream;
+            video.play();
+
+            // Inicia o loop de verificação de posição
+            checkPositionLoop();
+        } catch (error) {
+            console.error('Erro ao acessar a câmera:', error);
+            positionFeedback.textContent = 'Erro ao acessar a câmera';
+        }
+    }
+
+    async function checkPositionLoop() {
+        if (!isCheckingPosition) return;
+
+        try {
+            const imageData = await captureFrame();
+            const response = await fetch('/api/measurements/check_position/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ image: imageData })
+            });
+
+            const data = await response.json();
+            updateFaceGuide(data);
+        } catch (error) {
+            console.error('Erro na verificação de posição:', error);
+        }
+
+        requestAnimationFrame(checkPositionLoop);
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function updateFaceGuide(data) {
+        if (data.error) {
+            faceGuide.classList.remove('correct');
+            faceGuide.classList.add('incorrect');
+            positionFeedback.textContent = 'Erro ao processar imagem';
+            captureButton.disabled = true;
+            isFacePositioned = false;
+            return;
+        }
+
+        if (data.face_detected) {
+            if (data.is_centered) {
+                faceGuide.classList.remove('incorrect');
+                faceGuide.classList.add('correct');
+                positionFeedback.textContent = 'Rosto posicionado corretamente';
+                captureButton.disabled = false;
+                isFacePositioned = true;
+            } else {
+                faceGuide.classList.remove('correct');
+                faceGuide.classList.add('incorrect');
+                positionFeedback.textContent = 'Por favor, centralize seu rosto na tela';
+                captureButton.disabled = true;
+                isFacePositioned = false;
+            }
+        } else {
+            faceGuide.classList.remove('correct');
+            faceGuide.classList.add('incorrect');
+            positionFeedback.textContent = 'Nenhum rosto detectado';
+            captureButton.disabled = true;
+            isFacePositioned = false;
+        }
+    }
+
+    async function captureFrame() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        return canvas.toDataURL('image/jpeg');
+    }
+
+    async function captureMeasurement() {
+        if (!isFacePositioned) return;
+
+        try {
+            const imageData = await captureFrame();
+            const response = await fetch('/api/measurements/measure/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ image: imageData })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            currentMeasurementId = data.id;
+            resultDistanceValue.textContent = data.distance.toFixed(1);
+            resultConfidenceValue.textContent = (data.confidence * 100).toFixed(0) + '%';
+            resultDiv.classList.remove('hidden');
+            manualDistance.value = data.distance.toFixed(1);
+        } catch (error) {
+            console.error('Erro na captura:', error);
+            positionFeedback.textContent = 'Erro na captura: ' + error.message;
+        }
+    }
+
+    async function saveMeasurement() {
+        if (!currentMeasurementId) return;
+
+        try {
+            const response = await fetch(`/api/measurements/${currentMeasurementId}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    validated_distance: parseFloat(manualDistance.value),
+                    is_validated: true
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao salvar a medição');
+            }
+
+            window.location.href = '/history/';
+        } catch (error) {
+            console.error('Erro ao salvar:', error);
+            alert('Erro ao salvar a medição: ' + error.message);
+        }
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', startFaceDetection);
+    captureButton.addEventListener('click', captureMeasurement);
+    document.getElementById('saveBtn').addEventListener('click', saveMeasurement);
+</script>
+{% endblock %} 
