@@ -39,6 +39,10 @@ class PupilDistanceMeasurementViewSet(viewsets.ModelViewSet):
     queryset = PupilDistanceMeasurement.objects.all()
     serializer_class = PupilDistanceMeasurementSerializer
 
+    # Adiciona lista para armazenar as últimas medições
+    last_distances = []
+    MAX_DISTANCES = 5  # Número de medições para a média móvel
+
     def get_queryset(self):
         queryset = PupilDistanceMeasurement.objects.all()
         
@@ -93,11 +97,11 @@ class PupilDistanceMeasurementViewSet(viewsets.ModelViewSet):
             # Carrega o classificador de faces
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
             
-            # Ajusta os parâmetros para melhor detecção
+            # Ajusta os parâmetros para melhor detecção e estabilidade
             faces = face_cascade.detectMultiScale(
                 gray,
-                scaleFactor=1.1,
-                minNeighbors=3,
+                scaleFactor=1.05,  # Reduzido para maior estabilidade
+                minNeighbors=5,    # Aumentado para maior confiança
                 minSize=(100, 100)
             )
             
@@ -117,30 +121,57 @@ class PupilDistanceMeasurementViewSet(viewsets.ModelViewSet):
                 tolerance = 50  # pixels
                 is_centered = x_offset < tolerance and y_offset < tolerance
                 
-                # Verifica a distância do rosto
-                # A largura do rosto deve estar entre 200 e 300 pixels
-                # para garantir uma distância adequada
-                is_distance_ok = 200 <= w <= 300
+                # Calcula a distância aproximada em milímetros
+                pixels_per_mm = 0.264583333
+                current_distance = w * pixels_per_mm
+                
+                # Adiciona a distância atual à lista
+                self.last_distances.append(current_distance)
+                if len(self.last_distances) > self.MAX_DISTANCES:
+                    self.last_distances.pop(0)
+                
+                # Calcula a média móvel
+                distance_mm = round(sum(self.last_distances) / len(self.last_distances), 1)
+                
+                # Define o intervalo permitido de distância
+                min_distance = 78.0  # mm
+                max_distance = 80.5  # mm
+                target_distance = (min_distance + max_distance) / 2  # média do intervalo desejado
+                tolerance = 2.0  # tolerância aumentada para 2mm
+                
+                # Verifica se está dentro do intervalo com tolerância
+                is_distance_ok = abs(distance_mm - target_distance) <= tolerance
                 
                 if is_centered and is_distance_ok:
                     return Response({
                         'face_detected': True,
                         'is_centered': True,
-                        'message': 'Rosto posicionado corretamente'
+                        'message': 'Rosto posicionado corretamente',
+                        'distance': distance_mm
                     })
                 elif not is_centered:
                     return Response({
                         'face_detected': True,
                         'is_centered': False,
-                        'message': 'Por favor, centralize seu rosto na tela'
+                        'message': 'Por favor, centralize seu rosto na tela',
+                        'distance': distance_mm
                     })
                 else:
+                    message = 'Por favor, '
+                    if distance_mm < target_distance - tolerance:
+                        message += 'aproxime seu rosto da câmera'
+                    else:
+                        message += 'afaste seu rosto da câmera'
+                    
                     return Response({
                         'face_detected': True,
                         'is_centered': False,
-                        'message': 'Por favor, aproxime ou afaste seu rosto da câmera'
+                        'message': message,
+                        'distance': distance_mm
                     })
             else:
+                # Limpa a lista de distâncias quando não há face detectada
+                self.last_distances = []
                 return Response({
                     'face_detected': False,
                     'is_centered': False,

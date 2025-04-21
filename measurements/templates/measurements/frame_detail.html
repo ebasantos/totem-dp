@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ frame.name }} - Sistema de Medição de DP{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-4xl">
+        <div class="bg-white dark:bg-dark-200 rounded-lg shadow-lg overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-6">
+                    <img src="{{ frame.image.url }}" alt="{{ frame.name }}" class="w-full h-auto rounded-lg">
+                </div>
+                <div class="p-6">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">{{ frame.name }}</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">{{ frame.description }}</p>
+                    
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Medidas</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 dark:bg-dark-300 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Largura</p>
+                                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ frame.width }}mm</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-dark-300 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Altura</p>
+                                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ frame.height }}mm</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-dark-300 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Ponte</p>
+                                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ frame.bridge }}mm</p>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-dark-300 p-4 rounded-lg">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Haste</p>
+                                <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ frame.temple }}mm</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold text-gray-900 dark:text-gray-100">R$ {{ frame.price }}</span>
+                        <a href="{% url 'frames' %}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

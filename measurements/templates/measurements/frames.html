@@ -1,263 +1,33 @@
-{% extends 'measurements/base.html' %}
+{% extends 'base.html' %}
+
+{% block title %}Armações - Sistema de Medição de DP{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="sidebar-menu">
-                <ul>
-                    <li><a href="{% url 'measurements:index' %}">Início</a></li>
-                    <li><a href="{% url 'measurements:measure' %}">Medir</a></li>
-                    <li><a href="{% url 'measurements:history' %}">Histórico</a></li>
-                    <li><a href="{% url 'measurements:settings' %}">Configurações</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="col-md-9">
-            <div class="frame-preview">
-                <div class="video-container">
-                    <video id="video" autoplay playsinline></video>
-                    <canvas id="overlay"></canvas>
-                </div>
-                <div class="frame-overlay"></div>
-                <div class="camera-status">
-                    <span class="status-icon"></span>
-                    <span class="status-text">Posicionando câmera...</span>
-                </div>
-            </div>
-            <div class="frames-grid">
-                {% for frame in frames %}
-                <div class="frame-item" data-frame-id="{{ frame.id }}">
-                    <img src="{{ frame.image }}" alt="{{ frame.name }}">
-                    <div class="frame-info">
-                        <h3>{{ frame.name }}</h3>
-                        <p class="price">R$ {{ frame.price }}</p>
-                        <div class="measurements">
-                            <p>Largura: {{ frame.measurements.width }}mm</p>
-                            <p>Altura: {{ frame.measurements.height }}mm</p>
-                            <p>Ponte: {{ frame.measurements.bridge }}mm</p>
-                        </div>
+<div class="flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-6xl">
+        <h1 class="text-3xl font-bold text-center mb-8">Armações Disponíveis</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for frame in frames %}
+            <div class="bg-white dark:bg-dark-200 rounded-lg shadow-lg overflow-hidden">
+                <img src="{{ frame.image.url }}" alt="{{ frame.name }}" class="w-full h-64 object-cover">
+                <div class="p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{{ frame.name }}</h2>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">{{ frame.description }}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold text-gray-900 dark:text-gray-100">R$ {{ frame.price }}</span>
+                        <a href="{% url 'frame_detail' frame.id %}" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                            <i class="fas fa-eye"></i> Detalhes
+                        </a>
                     </div>
                 </div>
-                {% endfor %}
             </div>
+            {% empty %}
+            <div class="col-span-full text-center text-gray-500 dark:text-gray-400">
+                Nenhuma armação disponível no momento.
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
-
-<style>
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.row {
-    display: flex;
-    flex-wrap: wrap;
-    margin: 0 -15px;
-}
-
-.col-md-3 {
-    flex: 0 0 25%;
-    max-width: 25%;
-    padding: 0 15px;
-}
-
-.col-md-9 {
-    flex: 0 0 75%;
-    max-width: 75%;
-    padding: 0 15px;
-}
-
-.sidebar-menu {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.sidebar-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar-menu li {
-    margin-bottom: 10px;
-}
-
-.sidebar-menu a {
-    color: #333;
-    text-decoration: none;
-    display: block;
-    padding: 8px 0;
-}
-
-.sidebar-menu a:hover {
-    color: #007bff;
-}
-
-.frame-preview {
-    position: relative;
-    width: 100%;
-    height: 400px;
-    margin-bottom: 30px;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.video-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-#video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-#overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
-}
-
-.frame-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 20;
-    pointer-events: none;
-}
-
-.camera-status {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    color: #fff;
-    padding: 10px 15px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    z-index: 30;
-}
-
-.status-icon {
-    width: 10px;
-    height: 10px;
-    background: #ffc107;
-    border-radius: 50%;
-    margin-right: 10px;
-}
-
-.frames-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.frame-item {
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.frame-item:hover {
-    transform: translateY(-5px);
-}
-
-.frame-item img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-}
-
-.frame-info {
-    padding: 15px;
-}
-
-.frame-info h3 {
-    margin: 0 0 10px 0;
-    font-size: 16px;
-}
-
-.price {
-    color: #28a745;
-    font-weight: bold;
-    margin: 0 0 10px 0;
-}
-
-.measurements {
-    font-size: 12px;
-    color: #666;
-}
-
-.measurements p {
-    margin: 5px 0;
-}
-</style>
-
-<script>
-let video = document.getElementById('video');
-let overlay = document.getElementById('overlay');
-let ctx = overlay.getContext('2d');
-let selectedFrame = null;
-
-async function setupCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                facingMode: 'user'
-            }
-        });
-        video.srcObject = stream;
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play();
-                resolve(video);
-            };
-        });
-    } catch (err) {
-        console.error('Erro ao acessar a câmera:', err);
-        alert('Não foi possível acessar a câmera. Por favor, verifique as permissões.');
-    }
-}
-
-function updateCameraStatus(message, type = 'warning') {
-    const statusText = document.querySelector('.status-text');
-    const statusIcon = document.querySelector('.status-icon');
-    
-    statusText.textContent = message;
-    statusIcon.style.background = type === 'warning' ? '#ffc107' : '#28a745';
-}
-
-async function init() {
-    await setupCamera();
-    updateCameraStatus('Câmera pronta. Posicione seu rosto no centro da tela.', 'success');
-    
-    document.querySelectorAll('.frame-item').forEach(item => {
-        item.addEventListener('click', () => {
-            selectedFrame = item.dataset.frameId;
-            document.querySelectorAll('.frame-item').forEach(i => i.classList.remove('selected'));
-            item.classList.add('selected');
-        });
-    });
-}
-
-init();
-</script>
 {% endblock %} 
