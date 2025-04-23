@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'pupil_distance.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
+        default='postgresql://pupilometrodb_user:GzFujKUmrKKvjSBIIFq03r7HbRqncMHZ@dpg-d04j6us9c44c739n06u0-a.oregon-postgres.render.com/pupilometrodb',
         conn_max_age=600
     )
 }
