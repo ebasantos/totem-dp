@@ -26,12 +26,16 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
-static/
+staticfiles/
 
-# Virtual Environment
+# Environment
+.env
+.venv
+env/
 venv/
 ENV/
-env/
+env.bak/
+venv.bak/
 
 # IDE
 .idea/

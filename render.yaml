@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: totem-dp
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn pupil_distance.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: pupil_distance.settings
+      - key: SECRET_KEY
+        fromDatabase:
+          name: totem-dp-db
+          property: secret_key
+      - key: DATABASE_URL
+        fromDatabase:
+          name: totem-dp-db
+          property: connectionString
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+
+databases:
+  - name: totem-dp-db
+    databaseName: totem_dp
+    user: totem_dp_user
+    plan: free 
