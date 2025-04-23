@@ -14,6 +14,9 @@ from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.views.decorators.http import require_http_methods
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -34,6 +37,10 @@ def view_measurement(request, measurement_id):
 
 def frames(request):
     return render(request, 'measurements/frames.html')
+
+def glasses_detection(request):
+    """View para a página de detecção de óculos."""
+    return render(request, 'measurements/glasses_detection.html')
 
 class PupilDistanceMeasurementViewSet(viewsets.ModelViewSet):
     queryset = PupilDistanceMeasurement.objects.all()
@@ -302,6 +309,113 @@ class PupilDistanceMeasurementViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=500)
 
+    @action(detail=False, methods=['post'])
+    def detect_glasses(self, request):
+        """
+        Detecta se o usuário está usando óculos e calcula a distância
+        da pupila até a base da lente.
+        """
+        try:
+            # Obter a imagem da requisição
+            if 'image' not in request.data:
+                return Response({
+                    'success': False,
+                    'error': 'Nenhuma imagem fornecida'
+                }, status=400)
+            
+            # Decodificar a imagem
+            image_str = request.data['image']
+            if ',' in image_str:
+                image_data = base64.b64decode(image_str.split(',')[1])
+            else:
+                image_data = base64.b64decode(image_str)
+            
+            # Converter para array numpy
+            nparr = np.frombuffer(image_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            # Converter para escala de cinza para detecção
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            # Detectar face
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+            
+            if len(faces) == 0:
+                return Response({
+                    'success': False,
+                    'error': 'Nenhum rosto detectado'
+                }, status=400)
+            
+            # Pegar a primeira face
+            x, y, w, h = faces[0]
+            
+            # Recortar região dos olhos (aproximadamente)
+            roi_y = y + int(h * 0.2)  # 20% do topo da face
+            roi_h = int(h * 0.25)     # 25% da altura da face
+            roi_x = x
+            roi_w = w
+            
+            eye_region = gray[roi_y:roi_y+roi_h, roi_x:roi_x+roi_w]
+            
+            # Técnica 1: Detecção de óculos usando o classificador específico
+            glasses_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye_tree_eyeglasses.xml')
+            glasses = glasses_cascade.detectMultiScale(eye_region, 1.1, 4)
+            
+            # Técnica 2: Detecção de olhos
+            eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+            eyes = eye_cascade.detectMultiScale(eye_region, 1.1, 4)
+            
+            # Técnica 3: Análise de bordas na região dos olhos
+            edges = cv2.Canny(eye_region, 30, 150)
+            edge_density = np.sum(edges > 0) / (roi_w * roi_h)
+            
+            # Combinação das técnicas para decisão final
+            has_glasses = False
+            confidence = 0
+            
+            # Se detectou óculos e poucos olhos, provavelmente está usando óculos
+            if len(glasses) > 0 and len(eyes) <= 1:
+                has_glasses = True
+                confidence = min(100, len(glasses) * 30 + 40)  # Base + bônus por detecção
+            
+            # Se detectou muitos olhos (reflexos) e alta densidade de bordas
+            elif len(eyes) > 2 and edge_density > 0.1:
+                has_glasses = True
+                confidence = min(100, len(eyes) * 20 + 30)  # Base + bônus por reflexos
+            
+            # Se detectou poucos olhos e alta densidade de bordas
+            elif len(eyes) <= 1 and edge_density > 0.15:
+                has_glasses = True
+                confidence = min(100, edge_density * 500)  # Base na densidade de bordas
+            
+            # Se não detectou óculos e encontrou 2 olhos claramente
+            elif len(glasses) == 0 and len(eyes) == 2 and edge_density < 0.05:
+                has_glasses = False
+                confidence = 90  # Alta confiança quando detecta 2 olhos sem interferência
+            
+            # Caso contrário, decisão baseada na densidade de bordas
+            else:
+                has_glasses = edge_density > 0.1
+                confidence = min(100, edge_density * 400)
+            
+            return Response({
+                'success': True,
+                'has_glasses': has_glasses,
+                'confidence': round(confidence),
+                'details': {
+                    'glasses_detections': len(glasses),
+                    'eyes_detected': len(eyes),
+                    'edge_density': round(edge_density * 100, 1)
+                }
+            })
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
 class FramesView(View):
     def get_context_data(self, **kwargs):
         frames = [
@@ -333,3 +447,227 @@ class FramesView(View):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data()
         return render(request, 'measurements/frames.html', context)
+
+def detect_glasses(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido'}, status=405)
+    
+    try:
+        # Obter a imagem do corpo da requisição
+        try:
+            data = json.loads(request.body)
+            image_data = data.get('image')
+            if not image_data:
+                return JsonResponse({'success': False, 'error': 'Nenhuma imagem fornecida'}, status=400)
+            
+            # Remover o prefixo data:image/jpeg;base64, se presente
+            if ',' in image_data:
+                image_data = image_data.split(',')[1]
+            
+            # Decodificar a imagem base64
+            try:
+                image_bytes = base64.b64decode(image_data)
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if img is None:
+                    return JsonResponse({'success': False, 'error': 'Falha ao decodificar a imagem'}, status=400)
+                
+                # Pré-processamento da imagem
+                # 1. Redimensionar para um tamanho padrão
+                height, width = img.shape[:2]
+                scale = 640 / width
+                img = cv2.resize(img, (640, int(height * scale)))
+                
+                # 2. Converter para escala de cinza
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                
+                # 3. Aplicar equalização de histograma para melhorar o contraste
+                gray = cv2.equalizeHist(gray)
+                
+                # 4. Aplicar filtro bilateral para reduzir ruído mantendo bordas
+                gray = cv2.bilateralFilter(gray, 9, 75, 75)
+                
+                # Carregar os classificadores
+                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+                eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+                glasses_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye_tree_eyeglasses.xml')
+                
+                # Detectar face
+                faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+                if len(faces) == 0:
+                    return JsonResponse({'success': False, 'error': 'Nenhum rosto detectado'}, status=400)
+                
+                # Pegar a primeira face
+                x, y, w, h = faces[0]
+                
+                # Desenhar retângulo ao redor da face
+                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+                
+                # Recortar região dos olhos (aproximadamente)
+                roi_y = y + int(h * 0.2)  # 20% do topo da face
+                roi_h = int(h * 0.25)     # 25% da altura da face
+                roi_x = x
+                roi_w = w
+                
+                eye_region = gray[roi_y:roi_y+roi_h, roi_x:roi_x+roi_w]
+                
+                # 5. Aplicar morfologia para remover pequenos ruídos
+                kernel = np.ones((3,3), np.uint8)
+                eye_region = cv2.morphologyEx(eye_region, cv2.MORPH_OPEN, kernel)
+                
+                # Técnica 1: Detecção de óculos usando o classificador específico
+                glasses = glasses_cascade.detectMultiScale(eye_region, 1.1, 4)
+                
+                # Técnica 2: Detecção de olhos
+                eyes = eye_cascade.detectMultiScale(eye_region, 1.1, 4)
+                
+                # Desenhar retângulos ao redor dos olhos detectados
+                for (ex, ey, ew, eh) in eyes:
+                    cv2.rectangle(img, (roi_x + ex, roi_y + ey), 
+                                (roi_x + ex + ew, roi_y + ey + eh), (0, 255, 0), 2)
+                
+                # Técnica 3: Análise de bordas na região dos olhos
+                edges = cv2.Canny(eye_region, 30, 150)
+                edge_density = float(np.sum(edges > 0)) / float(roi_w * roi_h)
+                
+                # Combinação das técnicas para decisão final
+                has_glasses = False
+                confidence = 0
+                
+                # Se detectou óculos e poucos olhos, provavelmente está usando óculos
+                if len(glasses) > 0 and len(eyes) <= 1:
+                    has_glasses = True
+                    confidence = min(100, len(glasses) * 30 + 40)  # Base + bônus por detecção
+                    # Desenhar retângulos ao redor dos óculos detectados
+                    for (gx, gy, gw, gh) in glasses:
+                        cv2.rectangle(img, (roi_x + gx, roi_y + gy), 
+                                    (roi_x + gx + gw, roi_y + gy + gh), (0, 0, 255), 2)
+                
+                # Se detectou muitos olhos (reflexos) e alta densidade de bordas
+                elif len(eyes) > 2 and edge_density > 0.1:
+                    has_glasses = True
+                    confidence = min(100, len(eyes) * 20 + 30)  # Base + bônus por reflexos
+                
+                # Se detectou poucos olhos e alta densidade de bordas
+                elif len(eyes) <= 1 and edge_density > 0.15:
+                    has_glasses = True
+                    confidence = min(100, edge_density * 500)  # Base na densidade de bordas
+                
+                # Se não detectou óculos e encontrou 2 olhos claramente
+                elif len(glasses) == 0 and len(eyes) == 2 and edge_density < 0.05:
+                    has_glasses = False
+                    confidence = 90  # Alta confiança quando detecta 2 olhos sem interferência
+                
+                # Caso contrário, decisão baseada na densidade de bordas
+                else:
+                    has_glasses = edge_density > 0.1
+                    confidence = min(100, edge_density * 400)
+                
+                # Se detectou óculos com confiança suficiente, calcular a distância
+                pupil_to_frame_distance = None
+                if has_glasses and confidence >= 70 and len(eyes) > 0:
+                    try:
+                        # Pegar o primeiro olho detectado
+                        eye_x, eye_y, eye_w, eye_h = eyes[0]
+                        
+                        # Calcular o centro da pupila
+                        pupil_center_x = roi_x + eye_x + eye_w // 2
+                        pupil_center_y = roi_y + eye_y + eye_h // 2
+                        
+                        # Desenhar ponto no centro da pupila
+                        cv2.circle(img, (pupil_center_x, pupil_center_y), 5, (0, 255, 0), -1)
+                        
+                        # Encontrar a base da armação (aproximadamente)
+                        # Procurar bordas horizontais fortes abaixo do olho
+                        eye_bottom = roi_y + eye_y + eye_h
+                        search_region = gray[eye_bottom:eye_bottom+100, roi_x:roi_x+roi_w]  # Aumentar área de busca
+                        search_edges = cv2.Canny(search_region, 30, 150)
+                        
+                        # Aplicar dilatação para conectar bordas próximas
+                        kernel = np.ones((5,5), np.uint8)
+                        search_edges = cv2.dilate(search_edges, kernel, iterations=1)
+                        
+                        # Encontrar a linha mais forte na região
+                        lines = cv2.HoughLinesP(search_edges, 1, np.pi/180, threshold=30, minLineLength=20, maxLineGap=20)
+                        
+                        if lines is not None:
+                            # Pegar a linha mais horizontal e mais próxima do olho
+                            best_line = None
+                            best_score = 0
+                            for line in lines:
+                                x1, y1, x2, y2 = line[0]
+                                angle = np.abs(np.arctan2(y2-y1, x2-x1) * 180 / np.pi)
+                                if 0 <= angle <= 15 or 165 <= angle <= 180:  # Aumentar tolerância do ângulo
+                                    # Calcular distância do olho
+                                    line_y = eye_bottom + y1
+                                    distance_to_eye = abs(line_y - pupil_center_y)
+                                    # Score baseado na força da borda e proximidade do olho
+                                    score = np.sum(search_edges[y1:y2+1, x1:x2+1]) / (distance_to_eye + 1)
+                                    if score > best_score:
+                                        best_score = score
+                                        best_line = line[0]
+                            
+                            if best_line is not None:
+                                # Calcular a distância em pixels
+                                frame_y = eye_bottom + best_line[1]  # y da linha da armação
+                                distance_pixels = frame_y - pupil_center_y
+                                
+                                # Converter para milímetros (assumindo 1mm = 3.78 pixels)
+                                pixels_per_mm = 3.78
+                                pupil_to_frame_distance = round(distance_pixels / pixels_per_mm, 1)
+                                
+                                # Desenhar a linha na imagem
+                                cv2.line(img, 
+                                        (pupil_center_x, pupil_center_y),
+                                        (pupil_center_x, frame_y),
+                                        (0, 255, 0), 2)
+                                
+                                # Adicionar texto com a distância
+                                cv2.putText(img, f"{pupil_to_frame_distance}mm",
+                                          (pupil_center_x - 30, (pupil_center_y + frame_y) // 2),
+                                          cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                
+                                # Desenhar a linha da armação
+                                cv2.line(img,
+                                        (roi_x + best_line[0], eye_bottom + best_line[1]),
+                                        (roi_x + best_line[2], eye_bottom + best_line[3]),
+                                        (255, 0, 0), 2)
+                    except Exception as e:
+                        logger.error(f"Erro ao calcular distância: {str(e)}")
+                        pupil_to_frame_distance = None
+                
+                # Adicionar texto com o status da detecção
+                status_text = f"Óculos: {'Sim' if has_glasses else 'Não'} ({confidence}%)"
+                cv2.putText(img, status_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                
+                # Converter a imagem com as marcações para base64
+                _, buffer = cv2.imencode('.jpg', img)
+                marked_image = base64.b64encode(buffer).decode('utf-8')
+                
+                # Garantir que todos os valores são serializáveis
+                response_data = {
+                    'success': True,
+                    'has_glasses': bool(has_glasses),
+                    'confidence': int(round(confidence)),
+                    'pupil_to_frame_distance': pupil_to_frame_distance,
+                    'marked_image': marked_image,
+                    'details': {
+                        'glasses_detections': int(len(glasses)),
+                        'eyes_detected': int(len(eyes)),
+                        'edge_density': float(round(edge_density * 100, 1))
+                    }
+                }
+                
+                return JsonResponse(response_data)
+                
+            except cv2.error as e:
+                logger.error(f"Erro OpenCV: {str(e)}")
+                return JsonResponse({'success': False, 'error': f'Erro ao processar imagem: {str(e)}'}, status=500)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Formato JSON inválido'}, status=400)
+            
+    except Exception as e:
+        logger.error(f"Erro inesperado: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'Erro interno do servidor: {str(e)}'}, status=500)

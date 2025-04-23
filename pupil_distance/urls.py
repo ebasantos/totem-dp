@@ -16,19 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from measurements.views import PupilDistanceMeasurementViewSet, index, measure, history, settings, view_measurement, frames, FramesView
+from rest_framework import routers
+from measurements.views import PupilDistanceMeasurementViewSet, index, measure, history, settings, view_measurement, frames, glasses_detection, detect_glasses
 
-router = DefaultRouter()
+router = routers.DefaultRouter()
 router.register(r'measurements', PupilDistanceMeasurementViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('api/glasses/detect/', detect_glasses, name='detect_glasses'),
     path('', index, name='index'),
     path('measure/', measure, name='measure'),
     path('history/', history, name='history'),
     path('settings/', settings, name='settings'),
-    path('frames/', FramesView.as_view(), name='frames'),
+    path('frames/', frames, name='frames'),
     path('measurements/<int:measurement_id>/', view_measurement, name='view_measurement'),
+    path('glasses-detection/', glasses_detection, name='glasses_detection'),
 ]
