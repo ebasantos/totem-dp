@@ -76,7 +76,15 @@ TEMPLATES = [
     },
 ]
 
+# Configurações de porta
+PORT = 80
+
+# Configurações do servidor
 WSGI_APPLICATION = 'pupil_distance.wsgi.application'
+ASGI_APPLICATION = 'pupil_distance.asgi.application'
+
+# Configurações do Gunicorn
+GUNICORN_CMD_ARGS = '--bind=0.0.0.0:80 --workers=4 --timeout=120'
 
 
 # Database
