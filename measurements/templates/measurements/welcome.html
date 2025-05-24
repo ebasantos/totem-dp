@@ -1,0 +1,56 @@
+{% extends 'measurements/base.html' %}
+
+{% block title %}Bem-vindo - Totem DP{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <div class="sidebar">
+        <h2 class="text-xl font-bold mb-4">Menu</h2>
+        <ul>
+            <li class="mb-2">
+                <a href="/" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="/measurements/measure" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-ruler mr-2"></i>Medir DNP
+                </a>
+            </li>
+            <li class="mb-2">
+                <a href="/measurements/glasses_detection" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-glasses mr-2"></i>Medidor de Armação
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <h1 class="text-3xl font-bold mb-6">Bem-vindo ao Totem DP</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4">O que é Distância Pupilar (DP)?</h2>
+            <p class="text-gray-700 mb-4">
+                A Distância Pupilar (DP) é a medida entre o centro das suas pupilas, essencial para a confecção de óculos com lentes corretivas. 
+                Uma medida precisa garante que suas lentes sejam posicionadas corretamente, proporcionando melhor conforto visual.
+            </p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Como Medir sua DP</h2>
+            <ol class="list-decimal list-inside space-y-4 text-gray-700">
+                <li>Posicione-se a aproximadamente 30-40cm da câmera</li>
+                <li>Mantenha o rosto alinhado e olhando diretamente para a câmera</li>
+                <li>Certifique-se de que o ambiente esteja bem iluminado</li>
+                <li>Siga as instruções na tela para capturar a medida</li>
+            </ol>
+        </div>
+        
+        <div class="text-center">
+            <a href="/measurements/measure" class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Começar Medição
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

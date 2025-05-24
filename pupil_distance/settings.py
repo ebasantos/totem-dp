@@ -91,10 +91,14 @@ GUNICORN_CMD_ARGS = '--bind=0.0.0.0:80 --workers=4 --timeout=120'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default='postgresql://pupilometrodb_user:GzFujKUmrKKvjSBIIFq03r7HbRqncMHZ@dpg-d04j6us9c44c739n06u0-a.oregon-postgres.render.com/pupilometrodb',
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'pupil_distance'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+    }
 }
 
 

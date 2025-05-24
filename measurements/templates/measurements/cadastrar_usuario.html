@@ -1,0 +1,77 @@
+{% extends 'measurements/base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Cadastrar Novo Usuário - {{ empresa.nome }}</h1>
+        
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                <p class="text-red-700">Por favor, corrija os erros abaixo:</p>
+                {{ form.errors }}
+            </div>
+            {% endif %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome de Usuário</label>
+                    {{ form.username }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">Email</label>
+                    {{ form.email }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome</label>
+                    {{ form.first_name }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700">Sobrenome</label>
+                    {{ form.last_name }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.cargo.id_for_label }}" class="block text-sm font-medium text-gray-700">Cargo</label>
+                    {{ form.cargo }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.telefone.id_for_label }}" class="block text-sm font-medium text-gray-700">Telefone</label>
+                    {{ form.telefone }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700">Senha</label>
+                    {{ form.password1 }}
+                    {% if form.password1.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.password1.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700">Confirmar Senha</label>
+                    {{ form.password2 }}
+                    {% if form.password2.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.password2.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-4">
+                <a href="{% url 'lista_empresas' %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Cadastrar Usuário
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

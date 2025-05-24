@@ -1,0 +1,68 @@
+{% extends 'measurements/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto p-6">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Empresas Cadastradas</h1>
+            <a href="{% url 'cadastrar_empresa' %}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Nova Empresa
+            </a>
+        </div>
+        
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="p-4 {% if message.tags == 'success' %}bg-green-50 text-green-700{% else %}bg-red-50 text-red-700{% endif %} rounded-md">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CNPJ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefone</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for empresa in empresas %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ empresa.nome }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ empresa.cnpj }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ empresa.email }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ empresa.telefone }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if empresa.ativo %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ empresa.ativo|yesno:"Ativo,Inativo" }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'cadastrar_usuario_empresa' empresa.id %}" class="text-blue-600 hover:text-blue-900 mr-3">
+                                Adicionar Usuário
+                            </a>
+                            <a href="#" class="text-indigo-600 hover:text-indigo-900">
+                                Editar
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            Nenhuma empresa cadastrada.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 
